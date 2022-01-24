@@ -122,9 +122,9 @@ func AccAddressFromBech32(address string) (addr AccAddress, err error) {
 		return AccAddress{}, errors.New("empty address string is not allowed")
 	}
 
-	bech32PrefixAccAddr := GetConfig().GetBech32AccountAddrPrefix()
+	bech32PrefixesAccAddr := GetConfig().GetBech32AccountAddrPrefixes()
 
-	bz, err := GetFromBech32(address, bech32PrefixAccAddr)
+	bz, err := GetFromBech32(address, bech32PrefixesAccAddr)
 	if err != nil {
 		return nil, err
 	}
@@ -276,9 +276,9 @@ func ValAddressFromBech32(address string) (addr ValAddress, err error) {
 		return ValAddress{}, errors.New("empty address string is not allowed")
 	}
 
-	bech32PrefixValAddr := GetConfig().GetBech32ValidatorAddrPrefix()
+	bech32PrefixesValAddr := GetConfig().GetBech32ValidatorAddrPrefixes()
 
-	bz, err := GetFromBech32(address, bech32PrefixValAddr)
+	bz, err := GetFromBech32(address, bech32PrefixesValAddr)
 	if err != nil {
 		return nil, err
 	}
@@ -431,9 +431,9 @@ func ConsAddressFromBech32(address string) (addr ConsAddress, err error) {
 		return ConsAddress{}, errors.New("empty address string is not allowed")
 	}
 
-	bech32PrefixConsAddr := GetConfig().GetBech32ConsensusAddrPrefix()
+	bech32PrefixesConsAddr := GetConfig().GetBech32ConsensusAddrPrefixes()
 
-	bz, err := GetFromBech32(address, bech32PrefixConsAddr)
+	bz, err := GetFromBech32(address, bech32PrefixesConsAddr)
 	if err != nil {
 		return nil, err
 	}
@@ -643,21 +643,21 @@ func MustBech32ifyPubKey(pkt Bech32PubKeyType, pubkey cryptotypes.PubKey) string
 // GetPubKeyFromBech32 returns a PublicKey from a bech32-encoded PublicKey with
 // a given key type.
 func GetPubKeyFromBech32(pkt Bech32PubKeyType, pubkeyStr string) (cryptotypes.PubKey, error) {
-	var bech32Prefix string
+	var bech32Prefixes []string
 
 	switch pkt {
 	case Bech32PubKeyTypeAccPub:
-		bech32Prefix = GetConfig().GetBech32AccountPubPrefix()
+		bech32Prefixes = GetConfig().GetBech32AccountPubPrefixes()
 
 	case Bech32PubKeyTypeValPub:
-		bech32Prefix = GetConfig().GetBech32ValidatorPubPrefix()
+		bech32Prefixes = GetConfig().GetBech32ValidatorPubPrefixes()
 
 	case Bech32PubKeyTypeConsPub:
-		bech32Prefix = GetConfig().GetBech32ConsensusPubPrefix()
+		bech32Prefixes = GetConfig().GetBech32ConsensusPubPrefixes()
 
 	}
 
-	bz, err := GetFromBech32(pubkeyStr, bech32Prefix)
+	bz, err := GetFromBech32(pubkeyStr, bech32Prefixes)
 	if err != nil {
 		return nil, err
 	}
@@ -676,7 +676,7 @@ func MustGetPubKeyFromBech32(pkt Bech32PubKeyType, pubkeyStr string) cryptotypes
 }
 
 // GetFromBech32 decodes a bytestring from a Bech32 encoded string.
-func GetFromBech32(bech32str, prefix string) ([]byte, error) {
+func GetFromBech32(bech32str string, prefixes []string) ([]byte, error) {
 	if len(bech32str) == 0 {
 		return nil, errors.New("decoding Bech32 address failed: must provide an address")
 	}
@@ -686,8 +686,16 @@ func GetFromBech32(bech32str, prefix string) ([]byte, error) {
 		return nil, err
 	}
 
-	if hrp != prefix {
-		return nil, fmt.Errorf("invalid Bech32 prefix; expected %s, got %s", prefix, hrp)
+	isValidPrefix := false
+	for _, prefix := range prefixes {
+		if hrp == prefix {
+			isValidPrefix = true
+			break
+		}
+	}
+
+	if !isValidPrefix {
+		return nil, fmt.Errorf("invalid Bech32 prefix; expected %v, got %s", prefixes, hrp)
 	}
 
 	return bz, nil

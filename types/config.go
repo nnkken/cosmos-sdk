@@ -13,14 +13,14 @@ const DefaultKeyringServiceName = "cosmos"
 // Config is the structure that holds the SDK configuration parameters.
 // This could be used to initialize certain configuration parameters for the SDK.
 type Config struct {
-	fullFundraiserPath  string
-	bech32AddressPrefix map[string]string
-	txEncoder           TxEncoder
-	addressVerifier     func([]byte) error
-	mtx                 sync.RWMutex
-	coinType            uint32
-	sealed              bool
-	sealedch            chan struct{}
+	fullFundraiserPath    string
+	bech32AddressPrefixes map[string][]string
+	txEncoder             TxEncoder
+	addressVerifier       func([]byte) error
+	mtx                   sync.RWMutex
+	coinType              uint32
+	sealed                bool
+	sealedch              chan struct{}
 }
 
 // cosmos-sdk wide global singleton
@@ -33,13 +33,13 @@ var (
 func NewConfig() *Config {
 	return &Config{
 		sealedch: make(chan struct{}),
-		bech32AddressPrefix: map[string]string{
-			"account_addr":   Bech32PrefixAccAddr,
-			"validator_addr": Bech32PrefixValAddr,
-			"consensus_addr": Bech32PrefixConsAddr,
-			"account_pub":    Bech32PrefixAccPub,
-			"validator_pub":  Bech32PrefixValPub,
-			"consensus_pub":  Bech32PrefixConsPub,
+		bech32AddressPrefixes: map[string][]string{
+			"account_addr":   {Bech32PrefixAccAddr},
+			"validator_addr": {Bech32PrefixValAddr},
+			"consensus_addr": {Bech32PrefixConsAddr},
+			"account_pub":    {Bech32PrefixAccPub},
+			"validator_pub":  {Bech32PrefixValPub},
+			"consensus_pub":  {Bech32PrefixConsPub},
 		},
 		coinType:           CoinType,
 		fullFundraiserPath: FullFundraiserPath,
@@ -79,24 +79,51 @@ func (config *Config) assertNotSealed() {
 // and returns the config instance
 func (config *Config) SetBech32PrefixForAccount(addressPrefix, pubKeyPrefix string) {
 	config.assertNotSealed()
-	config.bech32AddressPrefix["account_addr"] = addressPrefix
-	config.bech32AddressPrefix["account_pub"] = pubKeyPrefix
+	config.bech32AddressPrefixes["account_addr"] = []string{addressPrefix}
+	config.bech32AddressPrefixes["account_pub"] = []string{pubKeyPrefix}
+}
+
+// SetBech32PrefixesForAccount builds the Config with Bech32 addressPrefixes and publKeyPrefixes for accounts
+// and returns the config instance
+// The first prefix in the array will be the default prefix for display
+func (config *Config) SetBech32PrefixesForAccount(addressPrefixes, pubKeyPrefixes []string) {
+	config.assertNotSealed()
+	config.bech32AddressPrefixes["account_addr"] = addressPrefixes
+	config.bech32AddressPrefixes["account_pub"] = pubKeyPrefixes
 }
 
 // SetBech32PrefixForValidator builds the Config with Bech32 addressPrefix and publKeyPrefix for validators
-//  and returns the config instance
+// and returns the config instance
 func (config *Config) SetBech32PrefixForValidator(addressPrefix, pubKeyPrefix string) {
 	config.assertNotSealed()
-	config.bech32AddressPrefix["validator_addr"] = addressPrefix
-	config.bech32AddressPrefix["validator_pub"] = pubKeyPrefix
+	config.bech32AddressPrefixes["validator_addr"] = []string{addressPrefix}
+	config.bech32AddressPrefixes["validator_pub"] = []string{pubKeyPrefix}
+}
+
+// SetBech32PrefixesForValidator builds the Config with Bech32 addressPrefixes and publKeyPrefixes for validators
+// and returns the config instance
+// The first prefix in the array will be the default prefix for display
+func (config *Config) SetBech32PrefixesForValidator(addressPrefixes, pubKeyPrefixes []string) {
+	config.assertNotSealed()
+	config.bech32AddressPrefixes["validator_addr"] = addressPrefixes
+	config.bech32AddressPrefixes["validator_pub"] = pubKeyPrefixes
 }
 
 // SetBech32PrefixForConsensusNode builds the Config with Bech32 addressPrefix and publKeyPrefix for consensus nodes
 // and returns the config instance
 func (config *Config) SetBech32PrefixForConsensusNode(addressPrefix, pubKeyPrefix string) {
 	config.assertNotSealed()
-	config.bech32AddressPrefix["consensus_addr"] = addressPrefix
-	config.bech32AddressPrefix["consensus_pub"] = pubKeyPrefix
+	config.bech32AddressPrefixes["consensus_addr"] = []string{addressPrefix}
+	config.bech32AddressPrefixes["consensus_pub"] = []string{pubKeyPrefix}
+}
+
+// SetBech32PrefixesForConsensusNode builds the Config with Bech32 addressPrefixes and publKeyPrefixes for consensus nodes
+// and returns the config instance
+// The first prefix in the array will be the default prefix for display
+func (config *Config) SetBech32PrefixesForConsensusNode(addressPrefixes, pubKeyPrefixes []string) {
+	config.assertNotSealed()
+	config.bech32AddressPrefixes["consensus_addr"] = addressPrefixes
+	config.bech32AddressPrefixes["consensus_pub"] = pubKeyPrefixes
 }
 
 // SetTxEncoder builds the Config with TxEncoder used to marshal StdTx to bytes
@@ -141,34 +168,64 @@ func (config *Config) Seal() *Config {
 	return config
 }
 
-// GetBech32AccountAddrPrefix returns the Bech32 prefix for account address
+// GetBech32AccountAddrPrefix returns the default Bech32 prefix for account address
 func (config *Config) GetBech32AccountAddrPrefix() string {
-	return config.bech32AddressPrefix["account_addr"]
+	return config.bech32AddressPrefixes["account_addr"][0]
 }
 
-// GetBech32ValidatorAddrPrefix returns the Bech32 prefix for validator address
+// GetBech32AccountAddrPrefixes returns all the Bech32 prefix for account address
+func (config *Config) GetBech32AccountAddrPrefixes() []string {
+	return config.bech32AddressPrefixes["account_addr"]
+}
+
+// GetBech32ValidatorAddrPrefix returns the default Bech32 prefix for validator address
 func (config *Config) GetBech32ValidatorAddrPrefix() string {
-	return config.bech32AddressPrefix["validator_addr"]
+	return config.bech32AddressPrefixes["validator_addr"][0]
 }
 
-// GetBech32ConsensusAddrPrefix returns the Bech32 prefix for consensus node address
+// GetBech32ValidatorAddrPrefixes returns all the Bech32 prefix for validator address
+func (config *Config) GetBech32ValidatorAddrPrefixes() []string {
+	return config.bech32AddressPrefixes["validator_addr"]
+}
+
+// GetBech32ConsensusAddrPrefix returns the default Bech32 prefix for consensus node address
 func (config *Config) GetBech32ConsensusAddrPrefix() string {
-	return config.bech32AddressPrefix["consensus_addr"]
+	return config.bech32AddressPrefixes["consensus_addr"][0]
 }
 
-// GetBech32AccountPubPrefix returns the Bech32 prefix for account public key
+// GetBech32ConsensusAddrPrefixes returns all the Bech32 prefix for consensus node address
+func (config *Config) GetBech32ConsensusAddrPrefixes() []string {
+	return config.bech32AddressPrefixes["consensus_addr"]
+}
+
+// Bech32AccountPubPrefix returns the default Bech32 prefix for account public key
 func (config *Config) GetBech32AccountPubPrefix() string {
-	return config.bech32AddressPrefix["account_pub"]
+	return config.bech32AddressPrefixes["account_pub"][0]
 }
 
-// GetBech32ValidatorPubPrefix returns the Bech32 prefix for validator public key
+// Bech32AccountPubPrefixes returns all the Bech32 prefix for account public key
+func (config *Config) GetBech32AccountPubPrefixes() []string {
+	return config.bech32AddressPrefixes["account_pub"]
+}
+
+// GetBech32ValidatorPubPrefix returns the default Bech32 prefix for validator public key
 func (config *Config) GetBech32ValidatorPubPrefix() string {
-	return config.bech32AddressPrefix["validator_pub"]
+	return config.bech32AddressPrefixes["validator_pub"][0]
 }
 
-// GetBech32ConsensusPubPrefix returns the Bech32 prefix for consensus node public key
+// GetBech32ValidatorPubPrefixes returns all the Bech32 prefix for validator public key
+func (config *Config) GetBech32ValidatorPubPrefixes() []string {
+	return config.bech32AddressPrefixes["validator_pub"]
+}
+
+// GetBech32ConsensusPubPrefix returns the default Bech32 prefix for consensus node public key
 func (config *Config) GetBech32ConsensusPubPrefix() string {
-	return config.bech32AddressPrefix["consensus_pub"]
+	return config.bech32AddressPrefixes["consensus_pub"][0]
+}
+
+// GetBech32ConsensusPubPrefixes returns all the Bech32 prefix for consensus node public key
+func (config *Config) GetBech32ConsensusPubPrefixes() []string {
+	return config.bech32AddressPrefixes["consensus_pub"]
 }
 
 // GetTxEncoder return function to encode transactions
