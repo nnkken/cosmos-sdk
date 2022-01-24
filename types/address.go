@@ -170,9 +170,9 @@ func AccAddressFromBech32(address string) (addr AccAddress, err error) {
 		return AccAddress{}, errors.New("empty address string is not allowed")
 	}
 
-	bech32PrefixAccAddr := GetConfig().GetBech32AccountAddrPrefix()
+	bech32PrefixesAccAddr := GetConfig().GetBech32AccountAddrPrefixes()
 
-	bz, err := GetFromBech32(address, bech32PrefixAccAddr)
+	bz, err := GetFromBech32(address, bech32PrefixesAccAddr)
 	if err != nil {
 		return nil, err
 	}
@@ -319,9 +319,9 @@ func ValAddressFromBech32(address string) (addr ValAddress, err error) {
 		return ValAddress{}, errors.New("empty address string is not allowed")
 	}
 
-	bech32PrefixValAddr := GetConfig().GetBech32ValidatorAddrPrefix()
+	bech32PrefixesValAddr := GetConfig().GetBech32ValidatorAddrPrefixes()
 
-	bz, err := GetFromBech32(address, bech32PrefixValAddr)
+	bz, err := GetFromBech32(address, bech32PrefixesValAddr)
 	if err != nil {
 		return nil, err
 	}
@@ -469,9 +469,9 @@ func ConsAddressFromBech32(address string) (addr ConsAddress, err error) {
 		return ConsAddress{}, errors.New("empty address string is not allowed")
 	}
 
-	bech32PrefixConsAddr := GetConfig().GetBech32ConsensusAddrPrefix()
+	bech32PrefixesConsAddr := GetConfig().GetBech32ConsensusAddrPrefixes()
 
-	bz, err := GetFromBech32(address, bech32PrefixConsAddr)
+	bz, err := GetFromBech32(address, bech32PrefixesConsAddr)
 	if err != nil {
 		return nil, err
 	}
@@ -635,7 +635,7 @@ func (ca ConsAddress) Format(s fmt.State, verb rune) {
 var errBech32EmptyAddress = errors.New("decoding Bech32 address failed: must provide a non empty address")
 
 // GetFromBech32 decodes a bytestring from a Bech32 encoded string.
-func GetFromBech32(bech32str, prefix string) ([]byte, error) {
+func GetFromBech32(bech32str string, prefixes []string) ([]byte, error) {
 	if len(bech32str) == 0 {
 		return nil, errBech32EmptyAddress
 	}
@@ -645,8 +645,16 @@ func GetFromBech32(bech32str, prefix string) ([]byte, error) {
 		return nil, err
 	}
 
-	if hrp != prefix {
-		return nil, fmt.Errorf("invalid Bech32 prefix; expected %s, got %s", prefix, hrp)
+	isValidPrefix := false
+	for _, prefix := range prefixes {
+		if hrp == prefix {
+			isValidPrefix = true
+			break
+		}
+	}
+
+	if !isValidPrefix {
+		return nil, fmt.Errorf("invalid Bech32 prefix; expected %v, got %s", prefixes, hrp)
 	}
 
 	return bz, nil
