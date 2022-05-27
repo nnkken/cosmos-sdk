@@ -428,14 +428,18 @@ func (k Keeper) UnbondAllMatureValidators(ctx sdk.Context) {
 				}
 				val, found := k.GetValidator(ctx, addr)
 				if !found {
-					panic("validator in the unbonding queue was not found")
+					// due to address Bech32 prefix migration, it is possible that entry with address with old prefix was not
+					// deleted (e.g. jailed during unbond), so we don't panic here and instead just skip this validator
+					ctx.Logger().Error("validator in the unbonding queue was not found", "validator", valAddr)
+					continue
 				}
 
 				if !val.IsUnbonding() {
 					if val.IsUnbonded() {
+						// same issue as the comments above
 						ctx.Logger().Error("unbonding validator but the status was unbonded", "validator", valAddr)
 					} else {
-						panic("unexpected validator in unbonding queue; status was not unbonding")
+						panic("unexpected validator in unbonding queue; status was not unbonding or unbonded")
 					}
 				}
 
