@@ -8,7 +8,7 @@ require (
 	github.com/bgentry/speakeasy v0.1.0
 	github.com/btcsuite/btcd v0.22.0-beta
 	github.com/coinbase/rosetta-sdk-go v0.7.0
-	github.com/confio/ics23/go v0.6.6
+	github.com/confio/ics23/go v0.9.0
 	github.com/cosmos/btcutil v1.0.4
 	github.com/cosmos/go-bip39 v1.0.0
 	github.com/cosmos/iavl v0.17.3
@@ -45,7 +45,7 @@ require (
 	github.com/tendermint/go-amino v0.16.0
 	github.com/tendermint/tendermint v0.34.19
 	github.com/tendermint/tm-db v0.6.6
-	golang.org/x/crypto v0.0.0-20210915214749-c084706c2272
+	golang.org/x/crypto v0.2.0
 	google.golang.org/genproto v0.0.0-20211208223120-3a66f561d7aa
 	google.golang.org/grpc v1.45.0
 	google.golang.org/protobuf v1.27.1
